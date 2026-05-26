@@ -1,0 +1,17 @@
+study_id,measure_id,mean,sd,n,L,scale_min,instrument
+S01,job_sat,3.42,0.71,128,5,1,Job Satisfaction Scale
+S01,org_commit,3.81,0.65,128,5,1,Organizational Commitment Scale
+S02,job_sat,5.14,1.13,89,7,1,Job Satisfaction Scale
+S02,turn_intent,3.05,1.58,89,7,1,Turnover Intention Scale
+S03,job_sat,3.67,0.78,212,,1,Job Satisfaction Scale
+S03,org_commit,3.42,0.69,212,,1,Organizational Commitment Scale
+S04,well_being,5.81,1.94,156,11,0,Cantril Ladder
+S05,life_sat,4.62,1.31,98,7,1,Satisfaction with Life Scale
+S05,affect_pos,4.91,1.05,98,7,1,PANAS Positive
+S05,affect_neg,2.13,0.91,98,7,1,PANAS Negative
+S06,life_sat,3.55,1.02,174,,1,Satisfaction with Life Scale
+S07,job_sat,3.78,0.81,302,5,1,Job Satisfaction Scale
+S08,job_sat,4.93,1.48,67,,1,Custom Job Sat Measure
+S08,burnout,3.12,1.21,67,,1,Custom Burnout Measure
+S09,org_commit,4.07,0.94,233,5,1,Organizational Commitment Scale
+S10,life_sat,5.21,1.62,141,7,1,Satisfaction with Life Scale
