@@ -5,21 +5,16 @@
 \alias{scaleL-package}
 \title{scaleL: Bayesian Imputation of Likert Scale Length for Meta-Analysis}
 \description{
-Implements the Steel & Fariborzi (2026) procedure for imputing missing
-Likert scale length L in meta-analytic data sets, with calibrated
-uncertainty propagation via multiple imputation and Rubin's rules.
+Bayesian imputation of missing Likert scale length L in meta-analytic
+data sets, with calibrated uncertainty propagation via multiple
+imputation and Rubin's rules.
 }
 \details{
 The main user-facing function is \code{\link[=scaleL]{scaleL()}}. See the package README for
 usage examples and scope-of-applicability notes.
 }
 \author{
-\strong{Maintainer}: Piers Steel \email{piers.steel@ucalgary.ca}
-
-Authors:
-\itemize{
-  \item Hadi Fariborzi \email{hfaribor@ucalgary.ca}
-}
+\strong{Maintainer}: scaleL Authors \email{scaleL.pkg@proton.me}
 
 }
 \keyword{internal}

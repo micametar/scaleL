@@ -1,19 +1,16 @@
 Package: scaleL
 Title: Bayesian Imputation of Likert Scale Length for Meta-Analysis
 Version: 0.1.0
-Authors@R: c(
-    person("Piers", "Steel", role = c("aut", "cre"),
-           email = "piers.steel@ucalgary.ca"),
-    person("Hadi", "Fariborzi", role = "aut",
-           email = "hfaribor@ucalgary.ca"))
-Description: Implements the Bayesian imputation procedure of Steel and
-    Fariborzi (2026) for recovering missing Likert scale length L in
-    meta-analytic data sets. Uses a variance-bound profile likelihood
-    combined with a structured prior over L (generic, field-specific,
-    instrument-specific, or user-supplied) to produce per-study posteriors,
-    multiple imputations, and pooled random-effects estimates via Rubin's
-    rules. Designed as a lightweight drop-in for downstream meta-analysis
-    workflows.
+Authors@R:
+    person("scaleL", "Authors", role = c("aut", "cre"),
+           email = "scaleL.pkg@proton.me")
+Description: Bayesian imputation of missing Likert scale length L in
+    meta-analytic data sets. Combines a variance-bound profile
+    likelihood with a structured prior over L (generic, field-specific,
+    instrument-specific, or user-supplied) to produce per-study
+    posteriors, multiple imputations, and pooled random-effects
+    estimates via Rubin's rules. Designed as a lightweight drop-in for
+    downstream meta-analysis workflows.
 License: GPL-3
 Encoding: UTF-8
 Depends:

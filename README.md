@@ -1,10 +1,6 @@
 # scaleL
 
 Bayesian imputation of Likert scale length L for meta-analysis.
-Companion R package to:
-
-> Steel, P., & Fariborzi, H. (2026). *Bayesian Imputation of Likert Scale
-> Length in Meta-Analysis.*
 
 `scaleL` recovers the missing scale length L of primary studies that
 report only a mean, standard deviation, and sample size. It produces a
@@ -107,17 +103,6 @@ The variance-bound likelihood used here is parametric and relies on
 within-study unimodality of the latent response distribution. Violations
 of those assumptions degrade both the per-study posterior and the
 pooled FMI estimate.
-
-## Citation
-
-```r
-citation("scaleL")
-```
-
-Or cite the paper directly:
-
-> Steel, P., & Fariborzi, H. (2026). Bayesian Imputation of Likert Scale
-> Length in Meta-Analysis.
 
 ## License
 
