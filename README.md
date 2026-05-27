@@ -69,6 +69,15 @@ Writing to disk is opt-in:
 write_scaleL(fit, "output_dir")   # writes the four CSV/text files
 ```
 
+## Within-study uniformity clustering
+
+Within-study L uniformity is now tested rather than assumed. Measures whose
+per-measure modal-L posteriors agree are pooled into a block and imputed
+jointly; measures that disagree are imputed independently. Configurable via
+`min_cluster_size` (default 2) and `min_cluster_modal_prob` (default 0.5).
+The `$practical` frame includes `block_id`, `block_size`, and `pooled_flag`
+columns indicating each measure's block assignment.
+
 ## Priors
 
 Tiered prior system, all supplied as `prior =` to `scaleL()`:

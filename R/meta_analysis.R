@@ -50,12 +50,19 @@ fit_re <- function(yi, vi, method = "PM") {
 #' @keywords internal
 run_meta_analysis <- function(study_results, studies, base_prior, M,
                               tau2_method = "PM") {
-  obs_idx <- which(!vapply(study_results, function(x) x$is_imputed, logical(1)))
+  # A study qualifies for listwise only if every block has observed L.
+  is_fully_observed <- vapply(study_results, function(sr) {
+    all(vapply(sr$block_data, function(b) !b$is_imputed, logical(1)))
+  }, logical(1))
+  obs_idx <- which(is_fully_observed)
   listwise <- list()
   for (k in obs_idx) {
     sr <- study_results[[k]]
-    tv <- study_theta_and_var(studies[[sr$study_id]], sr$L_observed,
-                              sr$scale_min)
+    L_per_block <- vapply(sr$block_data, function(b) {
+      if (b$is_imputed) b$L_modal else b$L_observed
+    }, integer(1))
+    tv <- study_theta_and_var_blocks(studies[[sr$study_id]],
+                                     sr$block_id, L_per_block, sr$scale_min)
     listwise[[length(listwise) + 1]] <- c(theta = tv$theta, v = tv$v)
   }
   yi_lw <- vapply(listwise, function(x) x["theta"], numeric(1))
@@ -66,16 +73,35 @@ run_meta_analysis <- function(study_results, studies, base_prior, M,
   prior_only <- list()
   for (k in seq_along(study_results)) {
     sr <- study_results[[k]]
-    L <- if (sr$is_imputed) prior_modal_L else sr$L_observed
-    tv <- study_theta_and_var(studies[[sr$study_id]], L, sr$scale_min)
+    L_per_block <- vapply(sr$block_data, function(b) {
+      if (b$is_imputed) prior_modal_L else b$L_observed
+    }, integer(1))
+    tv <- study_theta_and_var_blocks(studies[[sr$study_id]],
+                                     sr$block_id, L_per_block, sr$scale_min)
     prior_only[[length(prior_only) + 1]] <- c(theta = tv$theta, v = tv$v)
   }
   yi_p <- vapply(prior_only, function(x) x["theta"], numeric(1))
   vi_p <- vapply(prior_only, function(x) x["v"],     numeric(1))
   res_prior_only <- fit_re(yi_p, vi_p, tau2_method)
 
-  yi_b <- vapply(study_results, function(x) x$theta_bayes, numeric(1))
-  vi_b <- vapply(study_results, function(x) x$se_with_imputation^2, numeric(1))
+  # Bayes-point: n-weighted aggregate of per-block Bayes-point thetas.
+  yi_b <- numeric(length(study_results))
+  vi_b <- numeric(length(study_results))
+  for (k in seq_along(study_results)) {
+    sr <- study_results[[k]]
+    n_b <- length(sr$block_data)
+    block_thetas <- vapply(sr$block_data, function(b) b$theta_bayes,
+                           numeric(1))
+    block_vars   <- vapply(sr$block_data, function(b) b$var_total,
+                           numeric(1))
+    block_ns <- vapply(seq_len(n_b), function(b) {
+      sum(studies[[sr$study_id]]$n[sr$block_id == b])
+    }, numeric(1))
+    total_n <- sum(block_ns)
+    w <- if (total_n > 0) block_ns / total_n else rep(1 / n_b, n_b)
+    yi_b[k] <- sum(w * block_thetas)
+    vi_b[k] <- sum(w^2 * block_vars)
+  }
   res_bayes <- fit_re(yi_b, vi_b, tau2_method)
 
   mi_fits <- vector("list", M)
@@ -84,8 +110,11 @@ run_meta_analysis <- function(study_results, studies, base_prior, M,
     vi_m <- numeric(length(study_results))
     for (k in seq_along(study_results)) {
       sr <- study_results[[k]]
-      L <- if (sr$is_imputed) sr$L_draws[m] else sr$L_observed
-      tv <- study_theta_and_var(studies[[sr$study_id]], L, sr$scale_min)
+      L_per_block <- vapply(sr$block_data, function(b) b$L_draws[m],
+                            integer(1))
+      tv <- study_theta_and_var_blocks(studies[[sr$study_id]],
+                                       sr$block_id, L_per_block,
+                                       sr$scale_min)
       yi_m[k] <- tv$theta
       vi_m[k] <- tv$v
     }

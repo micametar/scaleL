@@ -29,8 +29,21 @@
 #'   downstream.
 #' @param tau2_method Heterogeneity estimator passed to `metafor::rma`.
 #'   Default `"PM"` (Paule-Mandel).
+#' @param min_cluster_size Minimum number of measures whose per-measure
+#'   modal-L posteriors agree before they are pooled into a joint block.
+#'   Default `2L`.
+#' @param min_cluster_modal_prob Minimum per-measure modal posterior
+#'   probability required for a measure to be eligible for pooling with
+#'   other measures sharing its modal L. Default `0.5`.
 #' @param seed Optional integer seed.
 #' @param verbose Logical; emit progress messages.
+#' @section Within-study L clustering:
+#' Each measure's per-measure posterior over L is computed independently.
+#' Measures whose modal L agrees (with modal probability at least
+#' `min_cluster_modal_prob`) are grouped; groups of at least
+#' `min_cluster_size` measures form a pooled block and are imputed
+#' jointly. Remaining measures are imputed as singletons. The per-measure
+#' output `pooled_flag` indicates which measures were pooled.
 #' @return An S3 object of class `"scaleL"` with elements `data`, `studies`,
 #'   `practical`, `diagnostic`, `meta` (if `compute_meta = TRUE`), `call`,
 #'   `prior_used`, `L_grid`, `M`, `method`.
@@ -50,6 +63,8 @@ scaleL <- function(data,
                    effect_col = NULL,
                    effect_se_col = NULL,
                    tau2_method = "PM",
+                   min_cluster_size = 2L,
+                   min_cluster_modal_prob = 0.5,
                    seed = NULL,
                    verbose = FALSE) {
   call <- match.call()
@@ -69,7 +84,10 @@ scaleL <- function(data,
     message(sprintf("Computing posteriors for %d studies ...", length(studies)))
   }
   study_results <- run_study_imputation(d, base_prior, L_grid, M,
-                                        instrument_priors)
+                                        instrument_priors,
+                                        min_cluster_size = min_cluster_size,
+                                        min_cluster_modal_prob =
+                                          min_cluster_modal_prob)
   frames <- build_output_frames(study_results, studies, L_grid, M)
 
   meta <- NULL

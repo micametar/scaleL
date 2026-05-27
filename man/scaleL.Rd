@@ -16,6 +16,8 @@ scaleL(
   effect_col = NULL,
   effect_se_col = NULL,
   tau2_method = "PM",
+  min_cluster_size = 2L,
+  min_cluster_modal_prob = 0.5,
   seed = NULL,
   verbose = FALSE
 )
@@ -54,6 +56,14 @@ downstream.}
 \item{tau2_method}{Heterogeneity estimator passed to \code{metafor::rma}.
 Default \code{"PM"} (Paule-Mandel).}
 
+\item{min_cluster_size}{Minimum number of measures whose per-measure
+modal-L posteriors agree before they are pooled into a joint block.
+Default \code{2L}.}
+
+\item{min_cluster_modal_prob}{Minimum per-measure modal posterior
+probability required for a measure to be eligible for pooling with
+other measures sharing its modal L. Default \code{0.5}.}
+
 \item{seed}{Optional integer seed.}
 
 \item{verbose}{Logical; emit progress messages.}
@@ -70,6 +80,16 @@ multiple imputations and per-measure standardized means with calibrated
 SEs, and (optionally) pools the result with random-effects meta-analysis
 using Rubin's rules.
 }
+\section{Within-study L clustering}{
+
+Each measure's per-measure posterior over L is computed independently.
+Measures whose modal L agrees (with modal probability at least
+\code{min_cluster_modal_prob}) are grouped; groups of at least
+\code{min_cluster_size} measures form a pooled block and are imputed
+jointly. Remaining measures are imputed as singletons. The per-measure
+output \code{pooled_flag} indicates which measures were pooled.
+}
+
 \examples{
 d <- read.csv(system.file("extdata", "sample_data.csv", package = "scaleL"))
 fit <- scaleL(d, prior = "tier1", M = 10, compute_meta = FALSE)

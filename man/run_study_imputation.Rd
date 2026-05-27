@@ -4,7 +4,15 @@
 \alias{run_study_imputation}
 \title{Per-study imputation loop (internal)}
 \usage{
-run_study_imputation(d, base_prior, L_grid, M, instrument_priors = NULL)
+run_study_imputation(
+  d,
+  base_prior,
+  L_grid,
+  M,
+  instrument_priors = NULL,
+  min_cluster_size = 2L,
+  min_cluster_modal_prob = 0.5
+)
 }
 \arguments{
 \item{d}{Validated input data.frame.}
@@ -16,13 +24,21 @@ run_study_imputation(d, base_prior, L_grid, M, instrument_priors = NULL)
 \item{M}{Number of multiple imputations.}
 
 \item{instrument_priors}{Optional named list of Tier 3 instrument priors.}
+
+\item{min_cluster_size}{Minimum size of a pooled block (default 2L).}
+
+\item{min_cluster_modal_prob}{Minimum per-measure modal probability
+required to be eligible for pooling (default 0.5).}
 }
 \value{
 List of per-study result records.
 }
 \description{
-Lifted verbatim from the practitioner script: computes the data-driven
-posterior over L, per-measure theta/SE/ESS, and M multiple-imputation
-draws for every study in the input.
+For each study, computes per-measure posteriors over L, groups measures
+into uniformity blocks (clusters of measures whose modal L agrees), pools
+each block jointly, and derives per-measure theta/SE/ESS from the
+measure's block. Backward-compatible with the original single-block
+(uniform) behaviour when a study has only one measure or all measures
+agree.
 }
 \keyword{internal}
