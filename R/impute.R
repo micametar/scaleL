@@ -72,8 +72,18 @@ assign_blocks_within_study <- function(per_meas_modal_L,
     } else {
       pm <- posterior_L(measures[i, , drop = FALSE], prior, L_grid,
                         scale_min_s)
+      # If every candidate L is infeasible for this measure (likelihood is
+      # -Inf everywhere) posterior_L returns the renormalized prior. If even
+      # that is empty (prior has no mass on L_grid for this row), fall back
+      # to a uniform posterior over L_grid so downstream block assignment
+      # has something to work with.
+      if (length(pm) == 0 || !any(is.finite(pm)) || sum(pm) == 0) {
+        L_char <- as.character(L_grid)
+        pm <- setNames(rep(1 / length(L_grid), length(L_grid)), L_char)
+      }
       out[[i]] <- pm
       idx <- which.max(pm)
+      if (length(idx) == 0L) idx <- 1L
       modal_L[i] <- as.integer(names(pm)[idx])
       modal_prob[i] <- as.numeric(pm[idx])
     }
@@ -108,10 +118,20 @@ assign_blocks_within_study <- function(per_meas_modal_L,
   theta_per_L_b <- vapply(per_L_b, function(x) x$theta, numeric(1))
   v_per_L_b     <- vapply(per_L_b, function(x) x$v, numeric(1))
   valid_b <- is.finite(theta_per_L_b) & is.finite(v_per_L_b) &
-             block_post > 0
+             !is.na(block_post) & block_post > 0
   if (!any(valid_b)) {
-    stop("Study '", s_name, "', block ", b,
-         ": no finite (theta, v) for any L with positive posterior mass.")
+    # All candidate L are structurally infeasible for this block's measures.
+    # This happens with extreme moments (sum-scale composites, miscoded means)
+    # in real corpora. Fall back to the prior over feasible L for this block.
+    L_keys_b <- as.integer(names(block_post))
+    feasible_L <- L_keys_b[is.finite(theta_per_L_b)]
+    if (length(feasible_L) == 0L) {
+      stop("Study '", s_name, "', block ", b,
+           ": no feasible L found at any candidate value.")
+    }
+    valid_b <- L_keys_b %in% feasible_L
+    block_post[!valid_b] <- 0
+    block_post[valid_b]  <- 1 / sum(valid_b)
   }
   block_post_v <- block_post
   block_post_v[!valid_b] <- 0
@@ -276,8 +296,17 @@ run_study_imputation <- function(d, base_prior, L_grid, M,
 
     # ---- Study-level data-driven posterior (diagnostic only) ----
     data_driven_post <- posterior_L(measures, prior, L_grid, scale_min_s)
+    if (length(data_driven_post) == 0 || !any(is.finite(data_driven_post)) ||
+        sum(data_driven_post, na.rm = TRUE) == 0) {
+      # Posterior degenerate; fall back to uniform over L_grid for the
+      # diagnostic record so build_output_frames has length-1 modal fields.
+      L_char <- as.character(L_grid)
+      data_driven_post <- setNames(rep(1 / length(L_grid), length(L_grid)),
+                                   L_char)
+    }
     dd_L_keys <- as.integer(names(data_driven_post))
     dd_modal_idx <- which.max(data_driven_post)
+    if (length(dd_modal_idx) == 0L) dd_modal_idx <- 1L
     dd_L_modal      <- dd_L_keys[dd_modal_idx]
     dd_L_modal_prob <- as.numeric(data_driven_post[dd_modal_idx])
     dd_L_bayes      <- sum(data_driven_post * dd_L_keys)
