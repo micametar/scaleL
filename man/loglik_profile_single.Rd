@@ -21,7 +21,9 @@ loglik_profile_single(xbar, s2, n, L, scale_min = 1)
 Scalar log-likelihood; \code{-Inf} if L is incompatible.
 }
 \description{
-Uses the asymptotic sampling distributions \code{xbar ~ N(mu, sigma^2/n)}
+One of three likelihood methods (\code{profile}, \code{full}, \code{empirical}) selected
+via \code{\link[=get_loglik_fn]{get_loglik_fn()}}. The profile method is the fast feasibility screen:
+it uses the asymptotic sampling distributions \code{xbar ~ N(mu, sigma^2/n)}
 and \verb{(n-1) s^2 / sigma^2 ~ chi^2(n-1)} at the MLE values of
 \verb{(mu, sigma^2)}, and rejects L values structurally incompatible with
 the observation (variance exceeds the Bhatia-Davis bound, or the

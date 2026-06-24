@@ -2,6 +2,9 @@
 #'
 #' Checks required columns, coerces types, fills in optional columns with
 #' defaults, and verifies that all rows have `n >= 2` and `sd > 0`.
+#' `scale_min` may be `NA` for a study: this triggers joint origin + L
+#' imputation in the pipeline. Optional composite-correction columns
+#' (`n_items` / `alpha` / `inter_item_r`) are carried through if present.
 #'
 #' @param d Input data.frame.
 #' @param verbose Logical; if `TRUE`, prints a note when `true_L` is detected.
@@ -16,6 +19,9 @@ validate_input <- function(d, verbose = FALSE) {
   }
   if (!("L" %in% names(d))) d$L <- NA_integer_
   if (!("scale_min" %in% names(d))) d$scale_min <- 1
+  if (is.numeric(d$scale_min) || all(is.na(d$scale_min))) {
+    d$scale_min <- suppressWarnings(as.numeric(d$scale_min))
+  }
   if (!("measure_id" %in% names(d))) {
     d$measure_id <- paste0("m", seq_len(nrow(d)))
   }

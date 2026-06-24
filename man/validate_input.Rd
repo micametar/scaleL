@@ -17,5 +17,8 @@ Validated data.frame, ready for the imputation pipeline.
 \description{
 Checks required columns, coerces types, fills in optional columns with
 defaults, and verifies that all rows have \code{n >= 2} and \code{sd > 0}.
+\code{scale_min} may be \code{NA} for a study: this triggers joint origin + L
+imputation in the pipeline. Optional composite-correction columns
+(\code{n_items} / \code{alpha} / \code{inter_item_r}) are carried through if present.
 }
 \keyword{internal}

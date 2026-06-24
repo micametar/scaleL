@@ -10,8 +10,22 @@ data sets, with calibrated uncertainty propagation via multiple
 imputation and Rubin's rules.
 }
 \details{
-The main user-facing function is \code{\link[=scaleL]{scaleL()}}. See the package README for
-usage examples and scope-of-applicability notes.
+The main user-facing function is \code{\link[=scaleL]{scaleL()}}. Key capabilities:
+\itemize{
+\item Three likelihood methods selected by \code{lik_method}: \code{"empirical"}
+(default; internal Monte-Carlo reference histograms), \code{"full"} (2-D
+quadrature), \code{"profile"} (fast feasibility screen).
+\item A structured prior over L: \code{"tier1"}, \code{"tier1_shifted"},
+\code{"corpus"} (Laplace-smoothed observed-L frequencies),
+\code{"field:<name>"}, instrument-specific, or \code{"custom"}.
+\item Joint origin + L imputation when \code{scale_min} is \code{NA}.
+\item SD imputation on bounded scales (\code{\link[=sd_feasibility_and_impute]{sd_feasibility_and_impute()}},
+\code{\link[=sd_impute_mi]{sd_impute_mi()}}) with composite (J) correction.
+\item An across-study-means channel (\code{\link[=fit_REML]{fit_REML()}},
+\code{\link[=loglik_across_vec]{loglik_across_vec()}}) for a second likelihood over L.
+}
+The default candidate grid is \code{L_grid = 4:12}. See the README for usage
+examples and scope-of-applicability notes.
 }
 \author{
 \strong{Maintainer}: scaleL Authors \email{scaleL.pkg@proton.me}

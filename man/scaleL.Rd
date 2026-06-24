@@ -9,7 +9,10 @@ scaleL(
   prior = "tier1",
   custom_prior = NULL,
   instrument_priors = NULL,
-  L_grid = 2:11,
+  L_grid = 4:12,
+  lik_method = c("empirical", "full", "profile"),
+  emp_R = 20000L,
+  candidate_origins = NULL,
   M = 50L,
   method = c("MI", "modal", "bayes_point"),
   compute_meta = FALSE,
@@ -25,9 +28,12 @@ scaleL(
 \arguments{
 \item{data}{Data.frame with one row per measure. Required columns:
 \code{study_id}, \code{mean}, \code{sd}, \code{n}. Optional: \code{L} (NA where missing),
-\code{scale_min} (default 1), \code{measure_id}, \code{instrument}, \code{true_L}.}
+\code{scale_min} (default 1; set to \code{NA} to trigger joint origin + L
+imputation), \code{measure_id}, \code{instrument}, \code{true_L}, and the
+composite-correction columns \code{n_items} / \code{alpha} / \code{inter_item_r}.}
 
 \item{prior}{Prior specification: \code{"tier1"}, \code{"tier1_shifted"},
+\code{"corpus"} (Laplace-smoothed observed-L frequencies),
 \code{"field:<name>"} (where \verb{<name>} is one of the entries in
 \link{FIELD_PRIORS}), or \code{"custom"}. Default \code{"tier1"}.}
 
@@ -37,7 +43,18 @@ scaleL(
 priors. Studies whose \code{instrument} matches a name in this list use the
 matching prior; others fall back to \code{prior}.}
 
-\item{L_grid}{Integer vector of candidate scale lengths. Default \code{2:11}.}
+\item{L_grid}{Integer vector of candidate scale lengths. Default \code{4:12}.}
+
+\item{lik_method}{Likelihood method: \code{"empirical"} (default; Monte-Carlo
+reference-histogram lookup, always available), \code{"full"} (2-D quadrature),
+or \code{"profile"} (fast feasibility screen).}
+
+\item{emp_R}{Number of synthetic studies per (L, N) cell for the empirical
+reference. Lower it (e.g. 2000) for fast examples/tests.}
+
+\item{candidate_origins}{Optional candidate origin values for origin
+imputation. Default: sorted unique observed \code{scale_min} among known-L
+studies, else \code{c(0, 1)}.}
 
 \item{M}{Number of multiple imputations. Default 50.}
 
@@ -92,6 +109,11 @@ output \code{pooled_flag} indicates which measures were pooled.
 
 \examples{
 d <- read.csv(system.file("extdata", "sample_data.csv", package = "scaleL"))
-fit <- scaleL(d, prior = "tier1", M = 10, compute_meta = FALSE)
+\donttest{
+# Empirical likelihood (default); shrink emp_R to keep the example fast.
+fit <- scaleL(d, prior = "tier1", M = 10, emp_R = 2000, compute_meta = FALSE)
 print(fit)
+}
+# Profile likelihood needs no Monte-Carlo reference:
+fit2 <- scaleL(d, prior = "tier1", M = 10, lik_method = "profile")
 }

@@ -56,7 +56,8 @@ assign_blocks_within_study <- function(per_meas_modal_L,
 }
 
 # Internal: compute per-measure posteriors (one per measure within a study).
-.per_measure_posteriors <- function(measures, prior, L_grid, scale_min_s) {
+.per_measure_posteriors <- function(measures, prior, L_grid, scale_min_s,
+                                    loglik_fn = get_loglik_fn()) {
   n_meas <- nrow(measures)
   out <- vector("list", n_meas)
   modal_L    <- integer(n_meas)
@@ -71,7 +72,7 @@ assign_blocks_within_study <- function(per_meas_modal_L,
       modal_prob[i] <- 1
     } else {
       pm <- posterior_L(measures[i, , drop = FALSE], prior, L_grid,
-                        scale_min_s)
+                        scale_min_s, loglik_fn = loglik_fn)
       # If every candidate L is infeasible for this measure (likelihood is
       # -Inf everywhere) posterior_L returns the renormalized prior. If even
       # that is empty (prior has no mass on L_grid for this row), fall back
@@ -94,7 +95,7 @@ assign_blocks_within_study <- function(per_meas_modal_L,
 
 # Internal: per-block posterior, per-L theta/v, Bayes-point quantities, MI draws.
 .compute_block <- function(block_measures, idx, prior, L_grid, scale_min_s,
-                           M, s_name, b) {
+                           M, s_name, b, loglik_fn = get_loglik_fn()) {
   block_obs_L_vals <- unique(block_measures$L[!is.na(block_measures$L)])
   if (length(block_obs_L_vals) > 1) {
     stop("Internal logic error: block in study '", s_name,
@@ -106,7 +107,8 @@ assign_blocks_within_study <- function(per_meas_modal_L,
   block_is_imputed <- is.na(block_L_observed)
 
   if (block_is_imputed) {
-    block_post <- posterior_L(block_measures, prior, L_grid, scale_min_s)
+    block_post <- posterior_L(block_measures, prior, L_grid, scale_min_s,
+                              loglik_fn = loglik_fn)
   } else {
     block_post <- .point_mass_posterior(block_L_observed, L_grid)
   }
@@ -189,12 +191,23 @@ assign_blocks_within_study <- function(per_meas_modal_L,
 #' @param min_cluster_size Minimum size of a pooled block (default 2L).
 #' @param min_cluster_modal_prob Minimum per-measure modal probability
 #'   required to be eligible for pooling (default 0.5).
+#' @param loglik_fn Per-measure log-likelihood function (default empirical
+#'   via [get_loglik_fn()]).
+#' @param range_prior Optional named range prior (origin|L) used to impute a
+#'   missing `scale_min` (see [estimate_range_prior_from_corpus()]).
+#' @param origin_grid Candidate origin values for origin imputation.
+#' @param origin_loglik_fn Log-likelihood used for the origin step (the
+#'   manuscript requires the empirical likelihood here).
 #' @return List of per-study result records.
 #' @keywords internal
 run_study_imputation <- function(d, base_prior, L_grid, M,
                                  instrument_priors = NULL,
                                  min_cluster_size = 2L,
-                                 min_cluster_modal_prob = 0.5) {
+                                 min_cluster_modal_prob = 0.5,
+                                 loglik_fn = get_loglik_fn(),
+                                 range_prior = NULL,
+                                 origin_grid = NULL,
+                                 origin_loglik_fn = loglik_fn) {
   studies <- split(d, d$study_id)
   study_results <- vector("list", length(studies))
   names(study_results) <- names(studies)
@@ -203,6 +216,26 @@ run_study_imputation <- function(d, base_prior, L_grid, M,
     measures <- studies[[s_name]]
     scale_min_s <- measures$scale_min[1]
     n_meas <- nrow(measures)
+
+    # ---- Impute the lower endpoint if it is missing ----
+    # When scale_min is unknown, impute the full range (origin, L) jointly and
+    # resolve the origin to its posterior mode, then proceed exactly as for a
+    # known origin (the L pipeline below is unchanged). Per the manuscript the
+    # origin step uses the empirical likelihood.
+    origin_imputed_s <- FALSE
+    origin_prob_s    <- NA_real_
+    if (is.na(scale_min_s)) {
+      if (is.null(range_prior) || is.null(origin_grid)) {
+        stop("Study '", s_name, "' has missing scale_min but no range prior ",
+             "was supplied. This should be provided by scaleL().")
+      }
+      oi <- impute_origin(measures, range_prior, L_grid, origin_grid,
+                          loglik_fn = origin_loglik_fn)
+      scale_min_s      <- oi$scale_min
+      origin_imputed_s <- TRUE
+      origin_prob_s    <- oi$prob
+      measures$scale_min <- scale_min_s
+    }
 
     prior <- base_prior
     if (!is.null(instrument_priors) && !is.na(measures$instrument[1]) &&
@@ -216,7 +249,8 @@ run_study_imputation <- function(d, base_prior, L_grid, M,
     }
 
     # ---- Per-measure pre-processing ----
-    pm <- .per_measure_posteriors(measures, prior, L_grid, scale_min_s)
+    pm <- .per_measure_posteriors(measures, prior, L_grid, scale_min_s,
+                                  loglik_fn = loglik_fn)
     per_meas_modal_L    <- pm$modal_L
     per_meas_modal_prob <- pm$modal_prob
     per_meas_observed   <- pm$observed
@@ -234,7 +268,7 @@ run_study_imputation <- function(d, base_prior, L_grid, M,
       idx <- which(block_id == b)
       block_data[[b]] <- .compute_block(measures[idx, , drop = FALSE],
                                         idx, prior, L_grid, scale_min_s,
-                                        M, s_name, b)
+                                        M, s_name, b, loglik_fn = loglik_fn)
     }
 
     # ---- Per-measure outputs (derived from each measure's block) ----
@@ -295,7 +329,8 @@ run_study_imputation <- function(d, base_prior, L_grid, M,
     }
 
     # ---- Study-level data-driven posterior (diagnostic only) ----
-    data_driven_post <- posterior_L(measures, prior, L_grid, scale_min_s)
+    data_driven_post <- posterior_L(measures, prior, L_grid, scale_min_s,
+                                     loglik_fn = loglik_fn)
     if (length(data_driven_post) == 0 || !any(is.finite(data_driven_post)) ||
         sum(data_driven_post, na.rm = TRUE) == 0) {
       # Posterior degenerate; fall back to uniform over L_grid for the
@@ -400,7 +435,9 @@ run_study_imputation <- function(d, base_prior, L_grid, M,
       block_id           = block_id,
       theta_per_L        = setNames(theta_per_L, as.character(L_keys)),
       v_per_L            = setNames(v_per_L, as.character(L_keys)),
-      scale_min          = scale_min_s
+      scale_min          = scale_min_s,
+      origin_imputed     = origin_imputed_s,
+      origin_prob        = origin_prob_s
     )
   }
 
@@ -462,7 +499,8 @@ build_output_frames <- function(study_results, studies, L_grid, M) {
       mean           = meas$mean,
       sd             = meas$sd,
       n              = meas$n,
-      scale_min      = meas$scale_min,
+      scale_min      = sr$scale_min,
+      origin_imputed = isTRUE(sr$origin_imputed),
       L_original     = meas$L,
       L_used         = L_used_vec,
       L_source       = L_source_vec,
@@ -496,6 +534,9 @@ build_output_frames <- function(study_results, studies, L_grid, M) {
       n_blocks                = sr$n_blocks,
       n_clustered_blocks      = sr$n_clustered_blocks,
       study_nonuniform        = sr$is_nonuniform,
+      scale_min_used          = sr$scale_min,
+      origin_imputed          = isTRUE(sr$origin_imputed),
+      origin_prob             = sr$origin_prob,
       L_observed              = sr$L_observed,
       L_was_imputed           = sr$is_imputed,
       L_modal_recovered       = sr$dd_L_modal,

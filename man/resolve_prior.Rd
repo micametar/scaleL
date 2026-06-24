@@ -4,11 +4,19 @@
 \alias{resolve_prior}
 \title{Resolve a prior specification into a normalized prior vector}
 \usage{
-resolve_prior(prior_type, custom_prior, L_grid, field_priors = FIELD_PRIORS)
+resolve_prior(
+  prior_type,
+  custom_prior,
+  L_grid,
+  field_priors = FIELD_PRIORS,
+  observed_L = NULL,
+  laplace_alpha = 0.5,
+  corpus_min_n = 10L
+)
 }
 \arguments{
-\item{prior_type}{One of \code{"tier1"}, \code{"tier1_shifted"}, \code{"field:<name>"},
-or \code{"custom"}.}
+\item{prior_type}{One of \code{"tier1"}, \code{"tier1_shifted"}, \code{"corpus"},
+\code{"field:<name>"}, or \code{"custom"}.}
 
 \item{custom_prior}{Named numeric vector. Required if
 \code{prior_type = "custom"}.}
@@ -17,16 +25,26 @@ or \code{"custom"}.}
 
 \item{field_priors}{Named list of field-specific priors (defaults to
 \link{FIELD_PRIORS}).}
+
+\item{observed_L}{Integer vector of observed study-level L values; required
+for \code{prior_type = "corpus"}.}
+
+\item{laplace_alpha}{Laplace pseudocount for the corpus prior (default 0.5).}
+
+\item{corpus_min_n}{Minimum observed-L study count below which the corpus
+prior triggers a warning (default 10).}
 }
 \value{
 Named numeric vector summing to 1, indexed by \code{as.character(L_grid)}.
 }
 \description{
 Implements the tier system: tier 1 generic, tier 1 shifted, tier 2
-(field), or user-supplied custom prior. The resulting vector is defined
-over the full candidate L grid, with zero mass on L values not in the
-named input prior.
+corpus-empirical (Laplace-smoothed observed-L frequencies), field-flavoured
+tier 1 variants, or user-supplied custom prior. The resulting vector is
+defined over the full candidate L grid, with zero mass on L values not in
+the named input prior.
 }
 \examples{
-resolve_prior("tier1", NULL, 2:11)
+resolve_prior("tier1", NULL, 4:12)
+resolve_prior("corpus", NULL, 4:12, observed_L = c(5, 5, 7, 5, 7))
 }

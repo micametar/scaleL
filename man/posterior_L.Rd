@@ -4,7 +4,13 @@
 \alias{posterior_L}
 \title{Posterior over candidate L for a study}
 \usage{
-posterior_L(measures, prior, L_grid, scale_min = 1)
+posterior_L(
+  measures,
+  prior,
+  L_grid,
+  scale_min = 1,
+  loglik_fn = get_loglik_fn()
+)
 }
 \arguments{
 \item{measures}{A data.frame with columns \code{mean}, \code{sd}, \code{n} (one row
@@ -15,18 +21,26 @@ per measure within the study).}
 \item{L_grid}{Integer vector of candidate L values.}
 
 \item{scale_min}{Lowest scale value (default 1).}
+
+\item{loglik_fn}{Per-measure log-likelihood function (default
+\code{\link[=get_loglik_fn]{get_loglik_fn()}}, i.e. the empirical likelihood). For the empirical
+method a reference must be available; use \code{lik_method = "profile"} or
+\code{"full"} for a reference-free posterior.}
 }
 \value{
 Named numeric vector summing to 1, indexed by \code{as.character(L_grid)}.
 }
 \description{
-Combines the per-measure profile log-likelihoods (assuming within-study
+Combines the per-measure log-likelihoods (assuming within-study
 uniformity of L) with a prior over candidate L to produce a normalized
-posterior. When every L is structurally rejected by the likelihood, the
-posterior falls back to the prior.
+posterior. The likelihood method is supplied via \code{loglik_fn}; by default
+the empirical reference-histogram likelihood is used (see
+\code{\link[=get_loglik_fn]{get_loglik_fn()}}). When every L is structurally rejected by the
+likelihood, the posterior falls back to the prior.
 }
 \examples{
 meas <- data.frame(mean = 3.5, sd = 0.8, n = 100)
-prior <- resolve_prior("tier1", NULL, 2:11)
-posterior_L(meas, prior, 2:11)
+prior <- resolve_prior("tier1", NULL, 4:12)
+# profile likelihood needs no Monte-Carlo reference:
+posterior_L(meas, prior, 4:12, loglik_fn = scaleL:::loglik_profile_single)
 }

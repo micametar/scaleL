@@ -11,7 +11,11 @@ run_study_imputation(
   M,
   instrument_priors = NULL,
   min_cluster_size = 2L,
-  min_cluster_modal_prob = 0.5
+  min_cluster_modal_prob = 0.5,
+  loglik_fn = get_loglik_fn(),
+  range_prior = NULL,
+  origin_grid = NULL,
+  origin_loglik_fn = loglik_fn
 )
 }
 \arguments{
@@ -29,6 +33,17 @@ run_study_imputation(
 
 \item{min_cluster_modal_prob}{Minimum per-measure modal probability
 required to be eligible for pooling (default 0.5).}
+
+\item{loglik_fn}{Per-measure log-likelihood function (default empirical
+via \code{\link[=get_loglik_fn]{get_loglik_fn()}}).}
+
+\item{range_prior}{Optional named range prior (origin|L) used to impute a
+missing \code{scale_min} (see \code{\link[=estimate_range_prior_from_corpus]{estimate_range_prior_from_corpus()}}).}
+
+\item{origin_grid}{Candidate origin values for origin imputation.}
+
+\item{origin_loglik_fn}{Log-likelihood used for the origin step (the
+manuscript requires the empirical likelihood here).}
 }
 \value{
 List of per-study result records.
